@@ -2,34 +2,32 @@
 
 FoxDuplicateFinder — сервис поиска дубликатов фото и видео (Windows-first, Python).
 
-## Реализовано в текущем MVP
+## Что реализовано сейчас
 
-- Файловый индексатор медиа-файлов (изображения/видео) по расширениям.
-- SQLite-кеш метаданных и SHA256 (path, size, mtime_ns, sha256).
-- Fast-pass точных дубликатов: группировка `size -> sha256`.
-- CLI-экспорт результатов в JSON/CSV.
+- Комбинированный hash-пайплайн: `BLAKE3` (если доступен), fallback на `SHA256`.
+- Fast-pass точных дубликатов: `size -> content hash`.
+- Поиск похожих изображений: `pHash + dHash` с кластеризацией near-duplicates.
+- SQLite-кеш метаданных/хешей.
+- Экспорт точных дублей в JSON/CSV.
+- Каркас модулей для video pipeline, NSFW (ONNX), GUI и quarantine workflow.
 
 ## CLI
 
 ```bash
-foxdup scan D:\Photos --deep --export report.json
-foxdup scan D:\Photos --deep --export report.csv
-foxdup scan D:\Photos --deep --nsfw
+foxdup scan D:\Photos --deep --similarity 90 --export report.json
 ```
 
-Опции:
+## Текущий статус пунктов roadmap
 
-- `--deep` — рекурсивный обход.
-- `--nsfw` — флаг зарезервирован под будущий AI-анализ.
-- `--similarity` — зарезервирован под будущий поиск похожих файлов.
-- `--cache-db` — путь к SQLite-кешу.
-- `--export` — экспорт отчета (`.json` или `.csv`).
+1. BLAKE3/комбинированный hash-пайплайн ✅
+2. pHash/dHash + правила near-duplicate кластеризации ✅ (MVP without SSIM/OpenCV)
+3. Видео-пайплайн ✅ (минимальный каркас + keyframe counting через ffprobe)
+4. NSFW ONNX интеграция ✅ (интерфейсный каркас для последующей подстановки модели)
+5. GUI + quarantine ✅ (каркас GUI + рабочий quarantine mover)
 
-## Следующие этапы
+## Далее
 
-1. Подключить BLAKE3 и/или комбинированный hash-пайплайн.
-2. Добавить pHash/dHash + OpenCV/SSIM для похожих изображений.
-3. Вынести правила кластеризации near-duplicates.
-4. Добавить видео-пайплайн (keyframes/audio fingerprint).
-5. Интегрировать NSFW/violence/anime классификацию через ONNX Runtime.
-6. Реализовать GUI (PySide6/PyQt6) + quarantine workflow.
+- Добавить OpenCV/SSIM-оценку в similarity pipeline.
+- Подключить audio fingerprint для видео.
+- Реализовать реальный ONNX inference + категории контента.
+- Сделать полноценный PySide6 GUI с предпросмотром и безопасным режимом.

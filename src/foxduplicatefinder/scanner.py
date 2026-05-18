@@ -1,33 +1,25 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
 
 from .cache import ScanCache
+from .clustering import NearDuplicateRule, cluster_near_duplicates
+from .hashing import combined_content_hash
 from .models import DuplicateGroup, FileRecord
+from .similarity import image_signature
 
 MEDIA_EXT = {
     ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"
 }
+IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tiff"}
 
 
 def iter_files(root: Path, deep: bool = True) -> list[Path]:
     globber = root.rglob("*") if deep else root.glob("*")
     return [p for p in globber if p.is_file() and p.suffix.lower() in MEDIA_EXT]
-
-
-def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        while True:
-            chunk = f.read(chunk_size)
-            if not chunk:
-                break
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def find_exact_duplicates(paths: list[Path], cache: ScanCache) -> list[DuplicateGroup]:
@@ -45,14 +37,22 @@ def find_exact_duplicates(paths: list[Path], cache: ScanCache) -> list[Duplicate
         by_hash: dict[str, list[FileRecord]] = defaultdict(list)
         for rec in recs:
             if rec.sha256 is None:
-                rec.sha256 = sha256_file(rec.path)
+                rec.sha256 = combined_content_hash(rec.path)
             cache.upsert(rec)
             by_hash[rec.sha256].append(rec)
         for h, items in by_hash.items():
             if len(items) > 1:
-                groups.append(DuplicateGroup(key=f"sha256:{h}", files=[r.path for r in items], total_size=size * len(items)))
+                groups.append(DuplicateGroup(key=f"content:{h}", files=[r.path for r in items], total_size=size * len(items)))
     cache.commit()
     return groups
+
+
+def find_near_duplicate_images(paths: list[Path], similarity_percent: int = 90) -> list[list[Path]]:
+    image_paths = [p for p in paths if p.suffix.lower() in IMAGE_EXT]
+    signatures = [image_signature(p) for p in image_paths]
+    # map 0..100 to permissive hamming thresholds
+    max_dist = max(2, int((100 - similarity_percent) / 2) + 4)
+    return cluster_near_duplicates(signatures, NearDuplicateRule(max_phash_distance=max_dist, max_dhash_distance=max_dist + 2))
 
 
 def export_json(groups: list[DuplicateGroup], out_path: Path) -> None:

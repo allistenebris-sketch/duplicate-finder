@@ -1,12 +1,14 @@
 [project]
 name = "foxduplicatefinder"
-version = "0.2.0"
+version = "0.3.0"
 description = "Duplicate photo/video finder with optional NSFW analysis"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "typer>=0.12",
   "rich>=13.7",
+  "pillow>=10.0",
+  "imagehash>=4.3",
 ]
 
 [project.scripts]
