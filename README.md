@@ -6,28 +6,16 @@ FoxDuplicateFinder — сервис поиска дубликатов фото �
 
 - Комбинированный hash-пайплайн: `BLAKE3` (если доступен), fallback на `SHA256`.
 - Fast-pass точных дубликатов: `size -> content hash`.
-- Поиск похожих изображений: `pHash + dHash` с кластеризацией near-duplicates.
+- Поиск похожих изображений: `pHash + dHash` + OpenCV SSIM post-filter для near-duplicates.
 - SQLite-кеш метаданных/хешей.
 - Экспорт точных дублей в JSON/CSV.
-- Каркас модулей для video pipeline, NSFW (ONNX), GUI и quarantine workflow.
+- Видео-пайплайн: keyframe count + audio fingerprint (PCM hash через ffmpeg).
+- NSFW-пайплайн на ONNX Runtime: реальный inference (при переданном `--nsfw-model`) с категориями `nsfw`, `violence`, `anime`.
+- PySide6 GUI: выбор папки, скан, список дублей, предпросмотр, safe mode (скрытие превью).
 
 ## CLI
 
 ```bash
-foxdup scan D:\Photos --deep --similarity 90 --export report.json
+foxdup scan D:\Photos --deep --similarity 90 --nsfw --nsfw-model models/safety.onnx --export report.json
+foxdup gui
 ```
-
-## Текущий статус пунктов roadmap
-
-1. BLAKE3/комбинированный hash-пайплайн ✅
-2. pHash/dHash + правила near-duplicate кластеризации ✅ (MVP without SSIM/OpenCV)
-3. Видео-пайплайн ✅ (минимальный каркас + keyframe counting через ffprobe)
-4. NSFW ONNX интеграция ✅ (интерфейсный каркас для последующей подстановки модели)
-5. GUI + quarantine ✅ (каркас GUI + рабочий quarantine mover)
-
-## Далее
-
-- Добавить OpenCV/SSIM-оценку в similarity pipeline.
-- Подключить audio fingerprint для видео.
-- Реализовать реальный ONNX inference + категории контента.
-- Сделать полноценный PySide6 GUI с предпросмотром и безопасным режимом.
