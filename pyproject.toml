@@ -1,6 +1,6 @@
 [project]
 name = "foxduplicatefinder"
-version = "0.1.0"
+version = "0.2.0"
 description = "Duplicate photo/video finder with optional NSFW analysis"
 readme = "README.md"
 requires-python = ">=3.12"
